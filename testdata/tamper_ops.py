@@ -35,6 +35,11 @@ def _find_text_rect(page: fitz.Page, needle: str) -> fitz.Rect | None:
     return None
 
 
+def _find_text_rects(page: fitz.Page, needle: str) -> list[fitz.Rect]:
+    """Return every bbox of `needle` on `page`."""
+    return list(page.search_for(needle))
+
+
 def _white_out_and_write(
     page: fitz.Page,
     rect: fitz.Rect,
@@ -166,7 +171,8 @@ def scan_and_splice_amount(
 
 
 def overlay_swap_text(clean_pdf: bytes, old_text: str, new_text: str) -> bytes:
-    """Draw a white rect over `old_text` and stamp `new_text` on top.
+    """Draw a white rect over EVERY occurrence of `old_text` and stamp
+    `new_text` on top of each.
 
     The original text stream is untouched, so the text layer still contains
     `old_text`. Triggers: text_over_image_overlay (fill on top of a text region),
@@ -178,10 +184,12 @@ def overlay_swap_text(clean_pdf: bytes, old_text: str, new_text: str) -> bytes:
     try:
         doc = fitz.open(path)
         page = doc[0]
-        rect = _find_text_rect(page, old_text)
-        if rect is None:
+        rects = _find_text_rects(page, old_text)
+        if not rects:
             raise ValueError(f"could not find {old_text!r}")
-        _white_out_and_write(page, rect, new_text, font_size=11.0)
+        for r in rects:
+            font_size = max(8.0, min(14.0, r.height * 0.9))
+            _white_out_and_write(page, r, new_text, font_size=font_size)
         out = doc.tobytes()  # fresh save, no incremental
         doc.close()
         return out
@@ -213,8 +221,8 @@ def resave_as_word(clean_pdf: bytes) -> bytes:
 
 
 def swap_ein_incremental(clean_pdf: bytes, old_ein: str, new_ein: str) -> bytes:
-    """Overlay new EIN digits in Times (mixed with the original Courier)
-    and save incrementally.
+    """Overlay new EIN digits in Times (mixed with the original Courier) at
+    every occurrence, and save incrementally.
 
     Triggers: font_family_mix_in_line, incremental_update_present,
     text_layer_mismatches_render.
@@ -225,11 +233,14 @@ def swap_ein_incremental(clean_pdf: bytes, old_ein: str, new_ein: str) -> bytes:
     try:
         doc = fitz.open(path)
         page = doc[0]
-        rect = _find_text_rect(page, old_ein)
-        if rect is None:
+        rects = _find_text_rects(page, old_ein)
+        if not rects:
             raise ValueError(f"could not find {old_ein!r}")
-        # White out + write in Times (fitz alias "tiro"). Original is Courier.
-        _white_out_and_write(page, rect, new_ein, font_size=14.0, fontname="tiro")
+        for r in rects:
+            # Match the visual size of the surrounding text — the header EIN
+            # is larger than body-text EINs. Use the rect height as a proxy.
+            font_size = max(9.0, min(16.0, r.height * 0.9))
+            _white_out_and_write(page, r, new_ein, font_size=font_size, fontname="tiro")
         doc.set_metadata({"title": "modified EIN"})
         _save_incremental_via_fitz(doc, path)
         doc.close()
