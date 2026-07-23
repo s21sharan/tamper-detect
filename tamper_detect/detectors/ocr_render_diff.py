@@ -38,6 +38,20 @@ def _tokens(text: str) -> set[str]:
     return out
 
 
+_ALNUM_RE = re.compile(r"[^a-z0-9]")
+
+
+def _alnum(s: str) -> str:
+    return _ALNUM_RE.sub("", s.lower())
+
+
+def _really_missing(token: str, other_text: str) -> bool:
+    """A token is really missing from `other_text` only if its alphanumeric
+    form doesn't appear anywhere as a substring. This is how we tolerate OCR
+    splitting hyphenated IDs into pieces."""
+    return _alnum(token) not in _alnum(other_text)
+
+
 # Tokens that look like they carry semantic weight for KYC (dollar amounts,
 # EIN-like numbers, permit numbers, etc.).
 _INTERESTING_RE = re.compile(
@@ -95,9 +109,24 @@ class OcrRenderDiff(BaseDetector):
         missing_from_ocr = ref_tokens - ocr_tokens
         extra_in_ocr = ocr_tokens - ref_tokens
 
-        # Significant token diffs — the strongest signal.
-        sig_missing = sorted(t for t in missing_from_ocr if _significant(t))
-        sig_extra = sorted(t for t in extra_in_ocr if _significant(t))
+        # Significant token diffs — the strongest signal. For hyphenated IDs
+        # (permit numbers, EIN-style), tolerate OCR splitting the ID into
+        # pieces via a substring check. For currency and other short tokens,
+        # keep strict membership so we don't accidentally treat "$87.42" as
+        # "present" just because "8742" is a prefix of "87420".
+        def _survives(token: str, other_text: str) -> bool:
+            if "-" in token:
+                return _really_missing(token, other_text)
+            return True
+
+        sig_missing = sorted(
+            t for t in missing_from_ocr
+            if _significant(t) and _survives(t, ocr_text)
+        )
+        sig_extra = sorted(
+            t for t in extra_in_ocr
+            if _significant(t) and _survives(t, reference)
+        )
 
         # Overall divergence — a broad noise floor.
         jaccard = len(ref_tokens & ocr_tokens) / max(1, len(ref_tokens | ocr_tokens))
