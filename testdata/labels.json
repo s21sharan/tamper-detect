@@ -1,0 +1,127 @@
+{
+  "docs": [
+    {
+      "file": "testdata/clean/01_utility_invoice_clean.pdf",
+      "doc_type": "utility_invoice",
+      "authentic": true,
+      "tamper_kind": null,
+      "expected_signals": [],
+      "expected_decision": "pass",
+      "original_text_reference": null,
+      "notes": ""
+    },
+    {
+      "file": "testdata/tampered/02_utility_invoice_amount_incremental.pdf",
+      "doc_type": "utility_invoice",
+      "authentic": false,
+      "tamper_kind": "amount_edit_incremental_update",
+      "expected_signals": [
+        "incremental_update_present",
+        "text_layer_mismatches_render"
+      ],
+      "expected_decision": "review_or_fail",
+      "original_text_reference": "$87.42",
+      "notes": "Text layer still says $87.42; new $874.20 stamped on top."
+    },
+    {
+      "file": "testdata/tampered/03_utility_invoice_scanned_spliced.pdf",
+      "doc_type": "utility_invoice",
+      "authentic": false,
+      "tamper_kind": "scanned_amount_splice",
+      "expected_signals": [
+        "jpeg_ghost",
+        "ela_hotspots",
+        "text_layer_mismatches_render"
+      ],
+      "expected_decision": "review_or_fail",
+      "original_text_reference": "$87.42",
+      "notes": "Whole page rasterized at QF=88; amount region re-saved at QF=62."
+    },
+    {
+      "file": "testdata/clean/04_sales_tax_permit_clean.pdf",
+      "doc_type": "sales_tax_permit",
+      "authentic": true,
+      "tamper_kind": null,
+      "expected_signals": [],
+      "expected_decision": "pass",
+      "original_text_reference": null,
+      "notes": ""
+    },
+    {
+      "file": "testdata/tampered/05_sales_tax_permit_overlay_swap.pdf",
+      "doc_type": "sales_tax_permit",
+      "authentic": false,
+      "tamper_kind": "business_name_overlay",
+      "expected_signals": [
+        "text_over_image_overlay",
+        "text_layer_mismatches_render"
+      ],
+      "expected_decision": "review_or_fail",
+      "original_text_reference": "Blue Ocean Coffee LLC",
+      "notes": "Original text NOT removed; white rect + new text stamped on top."
+    },
+    {
+      "file": "testdata/tampered/06_sales_tax_permit_resave_word.pdf",
+      "doc_type": "sales_tax_permit",
+      "authentic": false,
+      "tamper_kind": "resave_word_producer_mismatch",
+      "expected_signals": [
+        "producer_creator_mismatch"
+      ],
+      "expected_decision": "review_or_fail",
+      "original_text_reference": null,
+      "notes": "Creator=Microsoft Word, Producer=iLovePDF."
+    },
+    {
+      "file": "testdata/clean/07_ein_letter_clean.pdf",
+      "doc_type": "ein_letter",
+      "authentic": true,
+      "tamper_kind": null,
+      "expected_signals": [],
+      "expected_decision": "pass",
+      "original_text_reference": null,
+      "notes": ""
+    },
+    {
+      "file": "testdata/tampered/08_ein_letter_ein_swap_mixed_font.pdf",
+      "doc_type": "ein_letter",
+      "authentic": false,
+      "tamper_kind": "ein_swap_mixed_font_incremental",
+      "expected_signals": [
+        "incremental_update_present",
+        "font_family_mix_in_line",
+        "text_layer_mismatches_render"
+      ],
+      "expected_decision": "review_or_fail",
+      "original_text_reference": "88-3341572",
+      "notes": "Original EIN in Courier; overlay in Times; incremental save."
+    },
+    {
+      "file": "testdata/tampered/09_ein_letter_ai_lookalike.pdf",
+      "doc_type": "ein_letter",
+      "authentic": false,
+      "tamper_kind": "ai_generated_lookalike",
+      "expected_signals": [
+        "noise_residual_inconsistency",
+        "ai_generated_image",
+        "template_mismatch"
+      ],
+      "expected_decision": "review_or_fail",
+      "original_text_reference": null,
+      "notes": "Whole page rasterized w/ Gaussian noise + low-QF JPEG."
+    },
+    {
+      "file": "testdata/tampered/10_utility_invoice_copy_move.pdf",
+      "doc_type": "utility_invoice",
+      "authentic": false,
+      "tamper_kind": "copy_move_cover_watermark",
+      "expected_signals": [
+        "copy_move",
+        "ela_hotspots"
+      ],
+      "expected_decision": "review_or_fail",
+      "original_text_reference": null,
+      "notes": "A blank region is duplicated to cover an underlying PAID watermark."
+    }
+  ]
+}
