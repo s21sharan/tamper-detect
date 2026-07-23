@@ -188,6 +188,10 @@ class JpegGhost(BaseDetector):
         offenders: list[dict] = []
         for page_num in range(ctx.doc.num_pages):
             img, source = _page_scan_image(ctx.doc, page_num)
+            if source == "rendered":
+                # No prior JPEG history to disagree with itself — every QF
+                # gives the same residual profile. Skip.
+                continue
             if img.width < 100 or img.height < 100:
                 continue
             arr = _rgb_to_np(img).astype(np.float32).mean(axis=2)  # grayscale
@@ -346,6 +350,10 @@ class CopyMove(BaseDetector):
         offenders: list[dict] = []
         for page_num in range(ctx.doc.num_pages):
             img, source = _page_scan_image(ctx.doc, page_num)
+            if source == "rendered":
+                # Vector text has too many repeated features for ORB
+                # self-matching to be reliable — skip.
+                continue
             if img.width < 200 or img.height < 200:
                 continue
             gray = cv2.cvtColor(_rgb_to_np(img), cv2.COLOR_RGB2GRAY)
