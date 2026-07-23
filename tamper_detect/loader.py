@@ -43,8 +43,9 @@ class EmbeddedImage:
 @dataclass(frozen=True)
 class FontInfo:
     xref: int
-    name: str
-    type: str      # "TrueType", "Type1", "Type0", ...
+    name: str          # local resource name (e.g. "F1")
+    basefont: str      # real font name (e.g. "Helvetica-Bold")
+    type: str          # "TrueType", "Type1", "Type0", ...
     embedded: bool
     subset: bool
 
@@ -262,6 +263,7 @@ class LoadedDocument:
                 seen[xref] = FontInfo(
                     xref=xref,
                     name=name or basefont,
+                    basefont=basefont,
                     type=ftype,
                     embedded=embedded,
                     subset=subset,
