@@ -1,0 +1,40 @@
+# Weights for the tamper-detection scorer.
+# Tune these against the test corpus. Signal weights are per-signal knobs;
+# tier weights let us dial down a whole class of detectors (e.g. drop the
+# experimental tier's influence to almost zero without touching signals).
+
+tiers:
+  structural: 1.0
+  pixel: 0.8
+  ocr_diff: 0.9
+  experimental: 0.2
+
+signals:
+  # Tier 1 — pdf_structural
+  producer_creator_mismatch: 0.7
+  mod_date_after_create_date: 0.6
+  incremental_update_present: 0.8
+  xref_anomaly: 0.9
+  font_not_embedded: 0.4
+  font_family_mix_in_line: 0.9
+  text_over_image_overlay: 0.95
+
+  # Tier 2 — pixel_forensics
+  ela_hotspots: 0.6
+  jpeg_ghost: 0.85
+  noise_residual_inconsistency: 0.5
+  copy_move: 0.9
+
+  # Tier 3 — ocr_render_diff
+  text_layer_mismatches_render: 0.9
+
+  # Tier 4 — experimental
+  ai_generated_image: 0.4
+  ai_generated_text: 0.2
+  template_mismatch: 0.6
+
+# Decision thresholds — [inclusive_low, exclusive_high)
+decision_thresholds:
+  pass:   [0.00, 0.30]
+  review: [0.30, 0.65]
+  fail:   [0.65, 1.01]  # 1.01 so a score of exactly 1.0 lands in "fail"
